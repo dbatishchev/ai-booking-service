@@ -5,7 +5,7 @@ import { RestaurantMap } from "@/components/RestaurantMap";
 import { RestaurantFilters } from "@/components/RestaurantFilters";
 import { Restaurant } from "@/models/restaurant";
 import { Card, CardContent } from "@/components/ui/card";
-import { Search } from "lucide-react";
+import { Search, Loader2 } from "lucide-react";
 import { useInView } from "react-intersection-observer";
 import { useEffect } from "react";
 import { useRestaurants } from "@/hooks/useRestaurants";
@@ -47,6 +47,14 @@ export function RestaurantList({ initialRestaurants, filters }: RestaurantListPr
     return <div>Error loading restaurants</div>;
   }
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
   return (
     <div className="flex gap-8">
       <div className="w-64 flex-shrink-0">
@@ -77,7 +85,11 @@ export function RestaurantList({ initialRestaurants, filters }: RestaurantListPr
                 <RestaurantCard key={restaurant.id} {...restaurant} />
               ))}
               {!isLoading && hasNextPage && (
-                <div ref={ref} className="col-span-full h-10" />
+                <div ref={ref} className="col-span-full h-10 flex items-center justify-center">
+                  {isFetchingNextPage && (
+                    <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                  )}
+                </div>
               )}
             </div>
           </>
