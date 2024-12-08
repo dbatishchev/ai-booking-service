@@ -25,7 +25,7 @@ export function RestaurantFilters({}) {
     shallow: false,
   });
 
-  const { control, watch, reset } = useForm<FilterState>({
+  const { control, watch } = useForm<FilterState>({
     defaultValues: { 
       cuisines: cuisines as Cuisine[], 
       price, 

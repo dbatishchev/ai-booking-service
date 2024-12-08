@@ -15,4 +15,4 @@ export const filtersParsers = {
     verified: parseAsBoolean.withDefault(false),
 }
 
-export const searchParamsCache = createSearchParamsCache(filtersParsers)
+export const filtersSearchParamsCache = createSearchParamsCache(filtersParsers)

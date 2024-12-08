@@ -20,6 +20,7 @@ type FindRestaurantsParams = {
   };
   sortBy?: 'rating' | 'price' | 'distance' | 'reviewCount';
   limit?: number;
+  page?: number;
 };
 
 export async function findRestaurants(params: FindRestaurantsParams = {}): Promise<{ restaurants: Restaurant[]; total: number }> {
@@ -111,7 +112,10 @@ export async function findRestaurants(params: FindRestaurantsParams = {}): Promi
 
   // Apply limit with default value of 10
   const limit = params.limit ?? 10;
-  query = query.limit(limit) as typeof query;
+  const page = params.page ?? 1;
+  const offset = (page - 1) * limit;
+  
+  query = query.limit(limit).offset(offset) as typeof query;
 
   const result = await query;
 

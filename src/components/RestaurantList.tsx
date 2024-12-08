@@ -1,15 +1,52 @@
+'use client';
+
 import { RestaurantCard } from "@/components/RestaurantCard";
 import { RestaurantMap } from "@/components/RestaurantMap";
 import { RestaurantFilters } from "@/components/RestaurantFilters";
 import { Restaurant } from "@/models/restaurant";
 import { Card, CardContent } from "@/components/ui/card";
 import { Search } from "lucide-react";
+import { useInView } from "react-intersection-observer";
+import { useEffect } from "react";
+import { useQueryStates } from 'nuqs';
+import { filtersParsers } from "@/app/restaurants/searchParams";
+import { useRestaurants } from "@/hooks/useRestaurants";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 interface RestaurantListProps {
-  restaurants: Restaurant[];
+  initialRestaurants: Restaurant[];
 }
 
-export function RestaurantList({ restaurants }: RestaurantListProps) {
+export function RestaurantList({ initialRestaurants }: RestaurantListProps) {
+  const { ref, inView } = useInView({
+    threshold: 0,
+  });
+
+  // Get current filter values from URL
+  const [{ cuisines, price, rating, verified }] = useQueryStates(filtersParsers, {
+  });
+
+  const { 
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    isError 
+  } = useRestaurants(initialRestaurants, cuisines, price, rating, verified);
+
+  useEffect(() => {
+    if (inView && hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  const restaurants = data?.pages.flatMap(page => page.restaurants) ?? [];
+
+  if (isError) {
+    return <div>Error loading restaurants</div>;
+  }
+
   return (
     <div className="flex gap-8">
       <div className="w-64 flex-shrink-0">
@@ -39,6 +76,9 @@ export function RestaurantList({ restaurants }: RestaurantListProps) {
               {restaurants.map((restaurant) => (
                 <RestaurantCard key={restaurant.id} {...restaurant} />
               ))}
+              {!isLoading && hasNextPage && (
+                <div ref={ref} className="col-span-full h-10" />
+              )}
             </div>
           </>
         )}

@@ -17,6 +17,7 @@ export function RestaurantMap({ restaurants, selectedRestaurantId }: RestaurantM
   const googleMapRef = useRef<google.maps.Map | null>(null);
   const markersRef = useRef<google.maps.Marker[]>([]);
   const clustererRef = useRef<MarkerClusterer | null>(null);
+  const isInitializedRef = useRef(false);
 
   const handleZoomIn = () => {
     if (googleMapRef.current) {
@@ -31,7 +32,7 @@ export function RestaurantMap({ restaurants, selectedRestaurantId }: RestaurantM
   };
 
   useEffect(() => {
-    if (!mapRef.current) return;
+    if (!mapRef.current || isInitializedRef.current) return;
 
     // Add style to hide default close button
     const style = document.createElement('style');
@@ -42,14 +43,12 @@ export function RestaurantMap({ restaurants, selectedRestaurantId }: RestaurantM
     `;
     document.head.appendChild(style);
 
-    // Calculate center point from all restaurant coordinates
+    // Calculate initial center point
     const center = restaurants.reduce(
-      (acc, restaurant) => {
-        return {
-          lat: acc.lat + restaurant.latitude / restaurants.length,
-          lng: acc.lng + restaurant.longitude / restaurants.length,
-        };
-      },
+      (acc, restaurant) => ({
+        lat: acc.lat + restaurant.latitude / restaurants.length,
+        lng: acc.lng + restaurant.longitude / restaurants.length,
+      }),
       { lat: 0, lng: 0 }
     );
 
@@ -82,6 +81,22 @@ export function RestaurantMap({ restaurants, selectedRestaurantId }: RestaurantM
     });
 
     googleMapRef.current = map;
+    isInitializedRef.current = true;
+
+    return () => {
+      isInitializedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!googleMapRef.current) return;
+
+    // Clear existing markers
+    markersRef.current.forEach(marker => marker.setMap(null));
+    markersRef.current = [];
+    if (clustererRef.current) {
+      clustererRef.current.clearMarkers();
+    }
 
     // Create markers
     const markers = restaurants.map((restaurant) => {
@@ -146,7 +161,7 @@ export function RestaurantMap({ restaurants, selectedRestaurantId }: RestaurantM
       });
 
       marker.addListener('click', () => {
-        infoWindow.open(map, marker);
+        infoWindow.open(googleMapRef.current!, marker);
       });
 
       markersRef.current.push(marker);
@@ -155,7 +170,7 @@ export function RestaurantMap({ restaurants, selectedRestaurantId }: RestaurantM
 
     // Initialize MarkerClusterer
     clustererRef.current = new MarkerClusterer({
-      map,
+      map: googleMapRef.current,
       markers,
       renderer: {
         render: ({ count, position }) => {
