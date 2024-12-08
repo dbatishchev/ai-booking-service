@@ -32,7 +32,7 @@ export default async function RestaurantsPage({ searchParams }: PageProps) {
       </h1>
 
       <ReactQueryProvider>
-        <RestaurantList initialRestaurants={restaurants} />
+        <RestaurantList initialRestaurants={restaurants} filters={{ cuisines, price, rating, verified }} />
       </ReactQueryProvider>
     </div>
   );

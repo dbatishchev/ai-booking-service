@@ -10,7 +10,6 @@ export function useRestaurants(
   rating: number,
   verified: boolean
 ) {
-    console.log(['restaurants', cuisines, price, rating, verified])
   return useInfiniteQuery({
     queryKey: ['restaurants', cuisines, price, rating, verified],
     queryFn: async ({ pageParam = 1 }) => {
@@ -30,7 +29,7 @@ export function useRestaurants(
       pages: [{ restaurants: initialData }],
       pageParams: [1],
     },
-    staleTime: 0,
+    staleTime: 1000 * 60 * 10,
     initialPageParam: 1,
     refetchOnMount: false,
     refetchOnWindowFocus: false,

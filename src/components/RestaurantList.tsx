@@ -8,22 +8,22 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Search } from "lucide-react";
 import { useInView } from "react-intersection-observer";
 import { useEffect } from "react";
-import { useQueryStates } from 'nuqs';
-import { filtersParsers } from "@/app/restaurants/searchParams";
 import { useRestaurants } from "@/hooks/useRestaurants";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Cuisine } from "@/models/cuisine";
 
 interface RestaurantListProps {
   initialRestaurants: Restaurant[];
+  filters: {
+    cuisines: Cuisine[];
+    price: number;
+    rating: number;
+    verified: boolean;
+  }
 }
 
-export function RestaurantList({ initialRestaurants }: RestaurantListProps) {
+export function RestaurantList({ initialRestaurants, filters }: RestaurantListProps) {
   const { ref, inView } = useInView({
     threshold: 0,
-  });
-
-  // Get current filter values from URL
-  const [{ cuisines, price, rating, verified }] = useQueryStates(filtersParsers, {
   });
 
   const { 
@@ -33,7 +33,7 @@ export function RestaurantList({ initialRestaurants }: RestaurantListProps) {
     isFetchingNextPage,
     isLoading,
     isError 
-  } = useRestaurants(initialRestaurants, cuisines, price, rating, verified);
+  } = useRestaurants(initialRestaurants, filters.cuisines, filters.price, filters.rating, filters.verified);
 
   useEffect(() => {
     if (inView && hasNextPage && !isFetchingNextPage) {
