@@ -5,10 +5,10 @@ import { restaurants } from "@/db/schema";
 import { Cuisine } from "@/models/cuisine";
 import { OpeningHours, Restaurant } from "@/models/restaurant";
 import { and, eq, gte, sql } from "drizzle-orm";
-import { SQL } from 'drizzle-orm';
+import { SQL, inArray } from 'drizzle-orm';
 
 type FindRestaurantsParams = {
-  cuisine?: Cuisine;
+  cuisines?: Cuisine[];
   priceLevel?: number;
   minRating?: number;
   isVerified?: boolean;
@@ -22,13 +22,14 @@ type FindRestaurantsParams = {
   limit?: number;
 };
 
-export async function findRestaurants(params: FindRestaurantsParams = {}): Promise<Restaurant[]> {
+export async function findRestaurants(params: FindRestaurantsParams = {}): Promise<{ restaurants: Restaurant[]; total: number }> {
   let query = db.select().from(restaurants);
   const conditions: SQL[] = [];
 
   // Apply filters
-  if (params.cuisine) {
-    conditions.push(eq(restaurants.cuisine, params.cuisine));
+  console.log('params.cuisines', params.cuisines);
+  if (params.cuisines?.length) {
+    conditions.push(inArray(restaurants.cuisine, params.cuisines));
   }
 
   if (params.priceLevel) {
@@ -73,6 +74,12 @@ export async function findRestaurants(params: FindRestaurantsParams = {}): Promi
     query = query.where(and(...conditions)) as typeof query;
   }
 
+  // Get total count before applying sorting and limit
+  const countQuery = db.select({ count: sql<number>`count(*)` })
+    .from(restaurants)
+    .where(conditions.length > 0 ? and(...conditions) : undefined);
+  const [{ count }] = await countQuery;
+
   // Apply sorting
   if (params.sortBy) {
     switch (params.sortBy) {
@@ -87,7 +94,6 @@ export async function findRestaurants(params: FindRestaurantsParams = {}): Promi
         break;
       case 'distance':
         if (params.location) {
-          // Sort by distance using Haversine formula
           const distanceFormula = sql`
             6371 * acos(
               cos(radians(${params.location.latitude})) * 
@@ -103,10 +109,9 @@ export async function findRestaurants(params: FindRestaurantsParams = {}): Promi
     }
   }
 
-  // Apply limit
-  if (params.limit) {
-    query = query.limit(params.limit) as typeof query;
-  }
+  // Apply limit with default value of 10
+  const limit = params.limit ?? 10;
+  query = query.limit(limit) as typeof query;
 
   const result = await query;
 
@@ -119,5 +124,8 @@ export async function findRestaurants(params: FindRestaurantsParams = {}): Promi
     openingHours: r.openingHours as OpeningHours,
   }));
 
-  return restaurantResults;
+  return {
+    restaurants: restaurantResults,
+    total: Number(count),
+  };
 }
